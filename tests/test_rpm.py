@@ -29,12 +29,18 @@ class RPMTest(unittest.TestCase):
         self.assertEqual(self.rpm[rpmdefs.RPMTAG_COPYRIGHT], 'BSD')
         self.assertEqual(self.rpm[rpmdefs.RPMTAG_DESCRIPTION], description)
 
+    def test_package_type(self):
+        self.assertEqual(self.rpm.binary, False)
+        self.assertEqual(self.rpm.source, True)
+
+    def test_name(self):
+        self.assertEqual(self.rpm.name(), 'Eterm')
 
     def test_package(self):
-        self.assertEqual(self.rpm.package(), 'Eterm')
-
-    def test_fullname(self):
-        self.assertEqual(self.rpm.fullname(), 'Eterm-0.9.3-5mdv2007.0')
+        self.assertEqual(self.rpm.package(), 'Eterm-0.9.3')
 
     def test_filename(self):
         self.assertEqual(self.rpm.filename(), 'Eterm-0.9.3-5mdv2007.0.i586.src.rpm')
+
+    def test_entries(self):
+        self.assertEqual(self.rpm.entries(), '')
