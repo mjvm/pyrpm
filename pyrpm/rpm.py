@@ -171,7 +171,7 @@ class RPM(object):
                } ;
         '''
         lead_fmt = '!4sBBhh66shh16s'
-        data = self.rpm.read(96)
+        data = self.rpmfile.read(96)
         value = struct.unpack(lead_fmt, data)
 
         magic_num = value[0]
@@ -251,5 +251,10 @@ class RPM(object):
 
     def filename(self):
         package = self.package()
+        release = self[rpmdefs.RPMTAG_RELEASE]
+        name = '-'.join([package, release, ])
         arch = self[rpmdefs.RPMTAG_ARCH]
-        return '.'.join([package, arch, 'rpm', ])
+        if self.binary:
+            return '.'.join([name, arch, 'rpm', ])
+        else:
+            return '.'.join([name, arch, 'src.rpm', ])
