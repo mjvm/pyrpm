@@ -8,7 +8,7 @@ $Id$
 '''
 __revision__ = '$Rev$'[6:-2]
 
-
+RPM_LEAD_MAGIC_NUMBER = '\xed\xab\xee\xdb'
 RPM_HEADER_MAGIC_NUMBER = '8eade8'
 
 RPMTAG_MIN_NUMBER = 1000

@@ -35,10 +35,10 @@ class Entry(object):
         self.tag = entry[0]
 
     def __str__(self):
-        return str(self.tag) + '-' + str(self.value)
+        return "(%s, %s)" % (self.tag, self.value, )
 
     def __repr__(self):
-        return str(self.tag)+'-'+ str(self.value)
+        return "(%s, %s)" % (self.tag, self.value, )
 
     def __readchar(self, offset=1):
         ''' store is a pointer to the store offset
@@ -82,7 +82,7 @@ class Entry(object):
         string = ''
         while True:
             char = self.__readchar()
-            if char[0] == '\x00': # read until \0
+            if char[0] == '\x00': # read until '\0'
                 break
             string += char[0]
         return string
@@ -147,11 +147,48 @@ class RPM(object):
         elif isinstance(rpm, StringIO):
             self.rpmfile = rpm
         else:
-            raise RPMError('file format not suported')
+            raise ValueError('invalid initialization: '
+                             'StringIO or file expected received %s'
+                                 % (type(rpm), ))
         self.__entries = []
         self.__headers = []
 
+        self.__readlead()
         self.__readheaders()
+
+    def __readlead(self):
+        ''' reads the rpm lead section
+
+            struct rpmlead {
+               unsigned char magic[4];
+               unsigned char major, minor;
+               short type;
+               short archnum;
+               char name[66];
+               short osnum;
+               short signature_type;
+               char reserved[16];
+               } ;
+        '''
+        lead_fmt = '!4sBBhh66shh16s'
+        data = self.rpm.read(96)
+        value = struct.unpack(lead_fmt, data)
+
+        magic_num = value[0]
+        ptype = value[3]
+
+        if magic_num != rpmdefs.RPM_LEAD_MAGIC_NUMBER:
+            raise RPMError('wrong magic number this is not a RPM file')
+
+        if ptype == 1:
+            self.binary = False
+            self.source = True
+        elif ptype == 0:
+            self.binary = True
+            self.source = False
+        else:
+            raise RPMError('wrong package type this is not a RPM file')
+
 
     def __readheader(self, header):
         ''' reads the header-header section
@@ -204,16 +241,15 @@ class RPM(object):
                 if not isinstance(entry.value, tuple):
                     return entry.value
 
-    def package(self):
+    def name(self):
         return self[rpmdefs.RPMTAG_NAME]
 
-    def fullname(self):
+    def package(self):
         name = self[rpmdefs.RPMTAG_NAME]
         version = self[rpmdefs.RPMTAG_VERSION]
-        release = self[rpmdefs.RPMTAG_RELEASE]
-        return '-'.join([name, version, release, ])
+        return '-'.join([name, version, ])
 
     def filename(self):
-        name = self.fullname()
+        package = self.package()
         arch = self[rpmdefs.RPMTAG_ARCH]
-        return '.'.join([name, arch, 'rpm', ])
+        return '.'.join([package, arch, 'rpm', ])
