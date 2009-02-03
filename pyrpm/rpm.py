@@ -41,7 +41,7 @@ class Entry(object):
                         rpmdefs.RPM_DATA_TYPE_INT8:            self.__readint8,
                         rpmdefs.RPM_DATA_TYPE_INT16:           self.__readint16,
                         rpmdefs.RPM_DATA_TYPE_INT32:           self.__readint32,
-                        rpmdefs.RPM_DATA_TYPE_INT64:           self.__readin64,
+                        rpmdefs.RPM_DATA_TYPE_INT64:           self.__readint64,
                         rpmdefs.RPM_DATA_TYPE_STRING:          self.__readstring,
                         rpmdefs.RPM_DATA_TYPE_BIN:             self.__readbin,
                         rpmdefs.RPM_DATA_TYPE_I18NSTRING_TYPE: self.__readstring}
@@ -86,7 +86,7 @@ class Entry(object):
         value = struct.unpack(fmt, data)
         return value
 
-    def __readin64(self, offset=1):
+    def __readint64(self, offset=1):
         ''' int64 = 8bytes
         '''
         data = self.store.read(offset*4)
