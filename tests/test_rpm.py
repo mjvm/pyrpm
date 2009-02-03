@@ -11,6 +11,7 @@ __revision__ = '$Rev$'[6:-2]
 import unittest
 from pyrpm.rpm import RPM
 from pyrpm import rpmdefs
+from cStringIO import StringIO
 
 class RPMTest(unittest.TestCase):
 
@@ -20,7 +21,7 @@ class RPMTest(unittest.TestCase):
 
     def test_entries(self):
 
-        description = '''0'''
+        description = '''Eterm is a color vt102 terminal emulator intended as a replacement for Xterm.\nIt is designed with a Freedom of Choice philosophy, leaving as much power,\nflexibility, and freedom as possible in the hands of the user.\n\nIt is designed to look good and work well, but takes a feature-rich approach\nrather than one of minimalism while still maintaining speed and efficiency.\n\nIt works on any windowmanager/desktop environment, although it is designed\nto work and integrate best with Enlightenment.'''
 
         self.assertEqual(self.rpm[rpmdefs.RPMTAG_NAME], 'Eterm')
         self.assertEqual(self.rpm[rpmdefs.RPMTAG_VERSION], '0.9.3')
@@ -42,5 +43,9 @@ class RPMTest(unittest.TestCase):
     def test_filename(self):
         self.assertEqual(self.rpm.filename(), 'Eterm-0.9.3-5mdv2007.0.i586.src.rpm')
 
-    def test_entries(self):
-        self.assertEqual(self.rpm.entries(), '')
+
+class RPMStringIOTest(RPMTest):
+
+    def setUp(self):
+
+        self.rpm = RPM(StringIO(file('tests/Eterm-0.9.3-5mdv2007.0.src.rpm').read()))
