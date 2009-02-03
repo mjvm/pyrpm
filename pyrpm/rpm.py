@@ -9,10 +9,26 @@ $Id$
 __revision__ = '$Rev$'[6:-2]
 
 from StringIO import StringIO
+from cStringIO import StringIO
 import struct
-import binascii
 from pyrpm import rpmdefs
 import re
+
+HEADER_MAGIC_NUMBER = re.compile('(\x8e\xad\xe8)')
+
+def find_magic_number(regexp, buffer):
+    ''' find a magic number in a buffer
+    '''
+    string = buffer.read(1)
+    while True:
+        match = regexp.search(string)
+        if match:
+            return buffer.tell() - 3
+        byte = buffer.read(1)
+        if not byte:
+            return None
+        else:
+            string += byte
 
 class Entry(object):
     ''' RPM Header Entry
@@ -142,19 +158,20 @@ class RPM(object):
     def __init__(self, rpm):
         ''' rpm - StringIO.StringIO | file
         '''
-        if isinstance(rpm, file):
-            self.rpmfile = StringIO(rpm.read())
-        elif isinstance(rpm, StringIO):
+        if hasattr(rpm, 'read'): # if it walk like a duck..
             self.rpmfile = rpm
         else:
             raise ValueError('invalid initialization: '
                              'StringIO or file expected received %s'
                                  % (type(rpm), ))
+        self.binary = None
+        self.source = None
         self.__entries = []
         self.__headers = []
 
         self.__readlead()
-        self.__readheaders()
+        offset = self.__read_sigheader()
+        self.__readheaders(offset)
 
     def __readlead(self):
         ''' reads the rpm lead section
@@ -190,6 +207,18 @@ class RPM(object):
             raise RPMError('wrong package type this is not a RPM file')
 
 
+    def __read_sigheader(self):
+        ''' read signature header
+
+            ATN: this will not return any usefull information
+            besides the file offset
+        '''
+        start = find_magic_number(HEADER_MAGIC_NUMBER, self.rpmfile)
+        if not start:
+            raise RPMError('invalid RPM file, signature header not found')
+        # return the offsite after the magic number
+        return start+3
+
     def __readheader(self, header):
         ''' reads the header-header section
         [3bytes][1byte][4bytes][4bytes][4bytes]
@@ -200,32 +229,27 @@ class RPM(object):
             raise RPMError('invalid header size')
 
         header = struct.unpack(headerfmt, header)
-        magic_num = binascii.b2a_hex(header[0])
-
-        if not magic_num == rpmdefs.RPM_HEADER_MAGIC_NUMBER:
+        magic_num = header[0]
+        if magic_num != rpmdefs.RPM_HEADER_MAGIC_NUMBER:
             raise RPMError('invalid RPM header')
-
         return header
 
-    def __readheaders(self):
-        rpm = self.rpmfile
-        regexp = re.compile('\x8e\xad\xe8')
-        matches = regexp.finditer(self.rpmfile.buf)
-        counter = 0
-        for match in matches:
-            if counter == 2:
-                break
-            counter += 1
-            header_start = match.start() #save header position
-            rpm.seek(header_start)
-            header = rpm.read(16)
-            header = self.__readheader(header)
-            entries = []
-            for e in range(header[3]):
-                entry = rpm.read(16)
-                entries.append(entry)
-            store = StringIO(rpm.read(header[4]))
-            self.__headers.append(Header(header, entries, store))
+    def __readheaders(self, offset):
+        ''' read information headers
+        '''
+        # lets find the start of the header
+        self.rpmfile.seek(offset)
+        start = find_magic_number(HEADER_MAGIC_NUMBER, self.rpmfile)
+        # go back to the begining of the header
+        self.rpmfile.seek(start)
+        header = self.rpmfile.read(16)
+        header = self.__readheader(header)
+        entries = []
+        for entry in range(header[3]):
+            _entry = self.rpmfile.read(16)
+            entries.append(_entry)
+        store = StringIO(self.rpmfile.read(header[4]))
+        self.__headers.append(Header(header, entries, store))
 
         for header in self.__headers:
             for entry in header.rentries:
@@ -238,7 +262,7 @@ class RPM(object):
     def __getitem__(self, item):
         for entry in self:
             if entry.tag == item:
-                if not isinstance(entry.value, tuple):
+                if entry.value and isinstance(entry.value, str):
                     return entry.value
 
     def name(self):
