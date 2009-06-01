@@ -16,15 +16,15 @@ import re
 
 HEADER_MAGIC_NUMBER = re.compile('(\x8e\xad\xe8)')
 
-def find_magic_number(regexp, buffer):
+def find_magic_number(regexp, data):
     ''' find a magic number in a buffer
     '''
-    string = buffer.read(1)
+    string = data.read(1)
     while True:
         match = regexp.search(string)
         if match:
-            return buffer.tell() - 3
-        byte = buffer.read(1)
+            return data.tell() - 3
+        byte = data.read(1)
         if not byte:
             return None
         else:
@@ -95,6 +95,8 @@ class Entry(object):
         return value
 
     def __readstring(self):
+        ''' read a string entry
+        '''
         string = ''
         while True:
             char = self.__readchar()
@@ -104,6 +106,8 @@ class Entry(object):
         return string
 
     def __readbin(self):
+        ''' read a binary entry
+        '''
         if self.entry[0] == rpmdefs.RPMSIGTAG_MD5:
             data = self.store.read(rpmdefs.MD5_SIZE)
             value = struct.unpack('!'+rpmdefs.MD5_SIZE+'s', data)
@@ -134,21 +138,24 @@ class Header(object):
         '''
         entryfmt = '!llll'
         entry = struct.unpack(entryfmt, entry)
-        if entry[0] < rpmdefs.RPMTAG_MIN_NUMBER or entry[0] > rpmdefs.RPMTAG_MAX_NUMBER:
+        if entry[0] < rpmdefs.RPMTAG_MIN_NUMBER or\
+                entry[0] > rpmdefs.RPMTAG_MAX_NUMBER:
             return None
         return entry
 
     def __readentries(self):
-        for e in self.entries:
-            entry = self.__readentry(e)
+        ''' read a rpm entry
+        '''
+        for entry in self.entries:
+            entry = self.__readentry(entry)
             if entry:
                 if entry[0] in rpmdefs.RPMTAGS:
                     self.pentries.append(entry)
 
-        for e in self.pentries:
-            er = Entry(e, self.store)
-            if er:
-                self.rentries.append(er)
+        for pentry in self.pentries:
+            entry = Entry(pentry, self.store)
+            if entry:
+                self.rentries.append(entry)
 
 class RPMError(BaseException):
     pass
