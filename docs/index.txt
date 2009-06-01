@@ -1,0 +1,21 @@
+=====
+PyRPM
+=====
+
+:Author: Mario Morgado
+
+.. .. contents::
+
+Introduction
+============
+
+PyRPM is a pure python, simple to use, module to read information from a RPM file.::
+
+    >>> from pyrpm.rpm import RPM
+    >>> rpm = RPM(file('pyrpm-0.2-noarch.rpm'))
+    >>> rpm.filename()
+    'pyrpm-0.2-noarch.rpm'
+    >>> rpm.name()
+    'pyrpm'
+
+
