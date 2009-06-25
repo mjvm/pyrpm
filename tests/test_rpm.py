@@ -18,6 +18,7 @@ class RPMTest(unittest.TestCase):
     def setUp(self):
 
         self.rpm = RPM(file('tests/Eterm-0.9.3-5mdv2007.0.src.rpm'))
+        self.rpm = StringIO('')
 
     def test_entries(self):
 

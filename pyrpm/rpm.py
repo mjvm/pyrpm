@@ -2,7 +2,10 @@
 # -*- Mode: Python; py-ident-offset: 4 -*-
 # vim:ts=4:sw=4:et
 '''
-pyrpm module
+PyRPM
+=====
+
+PyRPM is a pure python, simple to use, module to read information from a RPM file.
 
 $Id$
 '''
