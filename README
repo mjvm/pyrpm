@@ -3,7 +3,7 @@ PyRPM
 =====
 
 :author: Mário Morgado
-:license: GPL
+:license: BSD
 
 PyRPM is a pure python module to extract information from a RPM package.
 
