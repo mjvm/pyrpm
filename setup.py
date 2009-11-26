@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '0.2'
+version = '0.3'
 
 setup(name='pyrpm',
       version=version,
@@ -11,7 +11,7 @@ setup(name='pyrpm',
       author="Mario Morgado",
       author_email="mjvm@caixamagica.pt",
       url="",
-      license="GPL",
+      license="BSD",
       package_dir={'': '.'},
       packages=find_packages(where='.')),
       include_package_data=True,
