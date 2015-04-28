@@ -12,7 +12,7 @@ Usage
 
         >>> from pyrpm.rpm import RPM
         >>> frpm pyrpm import rpmdefs
-        >>> rpm = RPM(file('package-1.0-r1.i586.rpm')
+        >>> rpm = RPM(file('package-1.0-r1.i586.rpm'))
         >>> rpm.binary # this means that the package is a rpm and not a src.rpm
         True
         >>> rpm.name()
