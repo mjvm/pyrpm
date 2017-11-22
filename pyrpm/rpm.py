@@ -11,8 +11,11 @@ $Id$
 '''
 __revision__ = '$Rev$'[6:-2]
 
-from StringIO import StringIO
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
+
 import struct
 from pyrpm import rpmdefs
 import re
