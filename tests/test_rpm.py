@@ -11,7 +11,11 @@ __revision__ = '$Rev$'[6:-2]
 import unittest
 from pyrpm.rpm import RPM
 from pyrpm import rpmdefs
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
+
 
 class RPMTest(unittest.TestCase):
 
