@@ -1,20 +1,18 @@
-# -*- coding: iso-8859-15 -*-
+# -*- coding: utf-8 -*-
 # -*- Mode: Python; py-ident-offset: 4 -*-
 # vim:ts=4:sw=4:et
 '''
 rpm definitions
 
-$Id$
 '''
-__revision__ = '$Rev$'[6:-2]
 
-RPM_LEAD_MAGIC_NUMBER = '\xed\xab\xee\xdb'
-RPM_HEADER_MAGIC_NUMBER = '\x8e\xad\xe8'
+RPM_LEAD_MAGIC_NUMBER = b'\xed\xab\xee\xdb'
+RPM_HEADER_MAGIC_NUMBER = b'\x8e\xad\xe8'
 
 RPMTAG_MIN_NUMBER = 1000
 RPMTAG_MAX_NUMBER = 1146
 
-#signature tags
+# signature tags
 RPMSIGTAG_SIZE     = 1000
 RPMSIGTAG_LEMD5_1  = 1001
 RPMSIGTAG_PGP      = 1002
@@ -24,8 +22,8 @@ RPMSIGTAG_GPG      = 1005
 RPMSIGTAG_PGP5     = 1006
 
 
-MD5_SIZE = 16 #16 bytes long
-PGP_SIZE = 152 #152 bytes long
+MD5_SIZE = 16  # 16 bytes long
+PGP_SIZE = 152  # 152 bytes long
 
 
 # data types definition
