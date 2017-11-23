@@ -1,4 +1,4 @@
-# -*- coding: iso-8859-15 -*-
+# -*- coding: utf-8 -*-
 # -*- Mode: Python; py-ident-offset: 4 -*-
 # vim:ts=4:sw=4:et
 '''
@@ -7,31 +7,29 @@ PyRPM
 
 PyRPM is a pure python, simple to use, module to read information from a RPM file.
 
-$Id$
 '''
-__revision__ = '$Rev$'[6:-2]
 
-from StringIO import StringIO
-from cStringIO import StringIO
 import struct
+from io import BytesIO
+
 from pyrpm import rpmdefs
-import re
 
-HEADER_MAGIC_NUMBER = re.compile('(\x8e\xad\xe8)')
 
-def find_magic_number(regexp, data):
-    ''' find a magic number in a buffer
+def find_magic_number(data, magic_number):
+    ''' attempts to find a magic number in a stream of bytes
+    returns the start position where the magic number was found
+    or None if not found
     '''
-    string = data.read(1)
+    base = data.tell()
     while True:
-        match = regexp.search(string)
-        if match:
-            return data.tell() - 3
-        byte = data.read(1)
-        if not byte:
+        chunk = data.read(len(magic_number))
+        if not chunk or len(chunk) != len(magic_number):
             return None
-        else:
-            string += byte
+        if chunk == magic_number:
+            return base
+        base += 1
+        data.seek(base)
+
 
 class Entry(object):
     ''' RPM Header Entry
@@ -40,14 +38,14 @@ class Entry(object):
         self.entry = entry
         self.store = store
 
-        self.switch = { rpmdefs.RPM_DATA_TYPE_CHAR:            self.__readchar,
-                        rpmdefs.RPM_DATA_TYPE_INT8:            self.__readint8,
-                        rpmdefs.RPM_DATA_TYPE_INT16:           self.__readint16,
-                        rpmdefs.RPM_DATA_TYPE_INT32:           self.__readint32,
-                        rpmdefs.RPM_DATA_TYPE_INT64:           self.__readint64,
-                        rpmdefs.RPM_DATA_TYPE_STRING:          self.__readstring,
-                        rpmdefs.RPM_DATA_TYPE_BIN:             self.__readbin,
-                        rpmdefs.RPM_DATA_TYPE_I18NSTRING_TYPE: self.__readstring}
+        self.switch = {rpmdefs.RPM_DATA_TYPE_CHAR:            self.__readchar,
+                       rpmdefs.RPM_DATA_TYPE_INT8:            self.__readint8,
+                       rpmdefs.RPM_DATA_TYPE_INT16:           self.__readint16,
+                       rpmdefs.RPM_DATA_TYPE_INT32:           self.__readint32,
+                       rpmdefs.RPM_DATA_TYPE_INT64:           self.__readint64,
+                       rpmdefs.RPM_DATA_TYPE_STRING:          self.__readstring,
+                       rpmdefs.RPM_DATA_TYPE_BIN:             self.__readbin,
+                       rpmdefs.RPM_DATA_TYPE_I18NSTRING_TYPE: self.__readstring}
 
         self.store.seek(entry[2])
         self.value = self.switch[entry[1]]()
@@ -57,13 +55,15 @@ class Entry(object):
         return "(%s, %s)" % (self.tag, self.value, )
 
     def __repr__(self):
-        return "(%s, %s)" % (self.tag, self.value, )
+        return "<Entry %r %r>" % (self.tag, self.value, )
 
     def __readchar(self, offset=1):
         ''' store is a pointer to the store offset
         where the char should be read
         '''
         data = self.store.read(offset)
+        if len(data) != offset:
+            return ""
         fmt = '!'+str(offset)+'c'
         value = struct.unpack(fmt, data)
         return value
@@ -100,13 +100,13 @@ class Entry(object):
     def __readstring(self):
         ''' read a string entry
         '''
-        string = ''
+        string = b''
         while True:
             char = self.__readchar()
-            if char[0] == '\x00': # read until '\0'
+            if len(char) == 0 or char[0] == b'\x00':  # read until '\0'
                 break
             string += char[0]
-        return string
+        return string.decode('utf-8')
 
     def __readbin(self):
         ''' read a binary entry
@@ -120,10 +120,11 @@ class Entry(object):
             value = struct.unpack('!'+rpmdefs.PGP_SIZE+'s', data)
             return value
 
+
 class Header(object):
     ''' RPM Header Structure
     '''
-    def __init__(self, header, entries , store):
+    def __init__(self, header, entries, store):
         '''
         '''
         self.header = header
@@ -133,7 +134,6 @@ class Header(object):
         self.rentries = []
 
         self.__readentries()
-
 
     def __readentry(self, entry):
         ''' [4bytes][4bytes][4bytes][4bytes]
@@ -160,23 +160,25 @@ class Header(object):
             if entry:
                 self.rentries.append(entry)
 
+
 class RPMError(BaseException):
     pass
+
 
 class RPM(object):
 
     def __init__(self, rpm):
         ''' rpm - StringIO.StringIO | file
         '''
-        if hasattr(rpm, 'read'): # if it walk like a duck..
+        if hasattr(rpm, 'read'):  # if it walk like a duck..
             self.rpmfile = rpm
         else:
             raise ValueError('invalid initialization: '
                              'StringIO or file expected received %s'
-                                 % (type(rpm), ))
+                             % (type(rpm), ))
         self.binary = None
         self.source = None
-        self.__entries = []
+        self.__entries = dict()
         self.__headers = []
 
         self.__readlead()
@@ -216,18 +218,17 @@ class RPM(object):
         else:
             raise RPMError('wrong package type this is not a RPM file')
 
-
     def __read_sigheader(self):
         ''' read signature header
 
             ATN: this will not return any usefull information
             besides the file offset
         '''
-        start = find_magic_number(HEADER_MAGIC_NUMBER, self.rpmfile)
+        start = find_magic_number(self.rpmfile, rpmdefs.RPM_HEADER_MAGIC_NUMBER)
         if not start:
             raise RPMError('invalid RPM file, signature header not found')
         # return the offsite after the magic number
-        return start+3
+        return start + len(rpmdefs.RPM_HEADER_MAGIC_NUMBER)
 
     def __readheader(self, header):
         ''' reads the header-header section
@@ -235,7 +236,7 @@ class RPM(object):
           MN      VER   UNUSED  IDXNUM  STSIZE
         '''
         headerfmt = '!3sc4sll'
-        if not len(header)==16:
+        if not len(header) == 16:
             raise RPMError('invalid header size')
 
         header = struct.unpack(headerfmt, header)
@@ -249,7 +250,7 @@ class RPM(object):
         '''
         # lets find the start of the header
         self.rpmfile.seek(offset)
-        start = find_magic_number(HEADER_MAGIC_NUMBER, self.rpmfile)
+        start = find_magic_number(self.rpmfile, rpmdefs.RPM_HEADER_MAGIC_NUMBER)
         # go back to the begining of the header
         self.rpmfile.seek(start)
         header = self.rpmfile.read(16)
@@ -258,25 +259,26 @@ class RPM(object):
         for entry in range(header[3]):
             _entry = self.rpmfile.read(16)
             entries.append(_entry)
-        store = StringIO(self.rpmfile.read(header[4]))
+        store = BytesIO(self.rpmfile.read(header[4]))
         self.__headers.append(Header(header, entries, store))
 
         for header in self.__headers:
             for entry in header.rentries:
-                self.__entries.append(entry)
+                self.__entries[entry.tag] = entry
 
     def __iter__(self):
         for entry in self.__entries:
             yield entry
 
     def __getitem__(self, item):
-        for entry in self:
-            if entry.tag == item:
-                if entry.value and isinstance(entry.value, str):
-                    return entry.value
+        entry = self.__entries.get(item, None)
+        return entry.value if entry else None
 
     def name(self):
         return self[rpmdefs.RPMTAG_NAME]
+
+    def description(self):
+        return self[rpmdefs.RPMTAG_DESCRIPTION]
 
     def package(self):
         name = self[rpmdefs.RPMTAG_NAME]
