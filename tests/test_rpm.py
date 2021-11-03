@@ -39,8 +39,27 @@ class RPMTest(unittest.TestCase):
     def test_name(self):
         self.assertEqual(self.rpm.name(), 'Eterm')
 
+    def test_version(self):
+        self.assertEqual(self.rpm.version(), '0.9.3')
+
+    def test_release(self):
+        self.assertEqual(self.rpm.release(), '5mdv2007.0')
+
+    def test_arch(self):
+        self.assertEqual(self.rpm.arch(), 'i586')
+
     def test_package(self):
         self.assertEqual(self.rpm.package(), 'Eterm-0.9.3')
 
     def test_filename(self):
         self.assertEqual(self.rpm.filename(), 'Eterm-0.9.3-5mdv2007.0.i586.rpm')
+
+    def test_epoch(self):
+        self.assertIsNone(self.rpm.epoch())
+
+    def test_sourcerpm(self):
+        self.assertEqual(self.rpm.sourcerpm(), '')
+
+    def test_summary(self):
+        summary = 'Eterm (Enlightened Terminal Emulator) is a terminal emulator'
+        self.assertEqual(self.rpm.summary(), summary)
