@@ -277,6 +277,15 @@ class RPM(object):
     def name(self):
         return self[rpmdefs.RPMTAG_NAME]
 
+    def version(self):
+        return self[rpmdefs.RPMTAG_VERSION]
+
+    def release(self):
+        return self[rpmdefs.RPMTAG_RELEASE]
+
+    def arch(self):
+        return self[rpmdefs.RPMTAG_ARCH]
+
     def description(self):
         return self[rpmdefs.RPMTAG_DESCRIPTION]
 
@@ -294,3 +303,12 @@ class RPM(object):
             return '.'.join([name, arch, 'rpm', ])
         else:
             return '.'.join([name, arch, 'src.rpm', ])
+
+    def epoch(self):
+        return self[rpmdefs.RPMTAG_EPOCH]
+
+    def sourcerpm(self):
+        return self[rpmdefs.RPMTAG_SOURCERPM]
+
+    def summary(self):
+        return self[rpmdefs.RPMTAG_SUMMARY]
